@@ -1,0 +1,133 @@
+---
+title: "BodyWeight Linear Mixed Model Analysis Analysis"
+author: "Michelle Ha"
+date: "`r format(Sys.time(), '%d %B %Y)')`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: '3'
+  urlcolor: blue
+  html_document:
+    'css:': style.css
+    figure_caption: true
+    highlight: pygments
+    number_sections: true
+    smart: false
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library, echo=FALSE, message=FALSE}
+packages <- c("lme4", "nlme", "tidyverse", "lmerTest", "ggplot2", "emmeans")
+invisible(lapply(packages, function(package_name) {
+  if (!requireNamespace(package_name, quietly = TRUE)) {
+    install.packages(package_name)
+  }
+  library(package_name, character.only = TRUE)
+}))
+
+data("BodyWeight")
+```
+
+```{r data}
+str(BodyWeight)
+```
+
+# Data Visualization
+```{r line-plot}
+BodyWeight |>
+  mutate(Rat1 = factor(as.numeric(Rat))) |>
+  ggplot(aes(Time, weight, group = Rat1, color = Rat1)) +
+  geom_point() +
+  facet_wrap(~Rat1) +
+  theme_minimal() +
+  labs(x = "Days", y = "Weight (g)")
+```
+The plot displays the body weights (in grams) of the rats over 64 days at interval of 7 days.
+
+```{r mean-plot}
+# Calculate mean weights for each Time and Diet combination
+mean_weights <- BodyWeight |>
+  summarize(mean_weight = mean(weight), .by = c("Time", "Diet"))
+
+mean_weights |> ggplot(aes(x = Time, y = mean_weight, color = Diet, group = Diet)) +
+  geom_line(size = 1) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  labs(
+    title = "Mean Rat Weight Over Time by Diet",
+    x = "Time",
+    y = "Mean Weight",
+    color = "Diet"
+  ) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
+```
+
+The figure showing the mean weight of each type of diet over time displays an increasing trend in the body weight of the rats as the days progress.
+
+# Model Fitting
+```{r lmm-interaction}
+BodyWeight <- BodyWeight |>
+  group_by(Rat) |>
+  arrange(weight, .by_group = TRUE) |>
+  mutate(initial_weight = first(weight)) |>
+  ungroup()
+# fit LMM with interaction effect
+model1 <- lmer(weight ~ Time * Diet + initial_weight + (1 | Rat), BodyWeight)
+summary(model1)
+anova(model1)
+```
+The interaction term `Time*Diet` has p-value < 0.05 therefore it is reasonable to say the type of die significiantly affect the rats body weight and the effect is consistent over time. The initial weight is also a strong indicator for the body weight.
+
+# Model Comparison
+
+```{r lmm-no-interaction}
+# fit LMM with no interaction effect
+model2 <- lmer(weight ~ Time + Diet + initial_weight + (1 | Rat), BodyWeight)
+```
+We will fit a simpler model without the interaction term to see if it could potentially performs as well as `model1`. The simpler model still has `Rat` as a random effect and initial_weight as fixed effect, except `Time` and `Diet` are now the fixed effects.
+
+```{r compare-models}
+# compare models
+anova(model1, model2)
+```
+P-value of < 0.05 and lower AIC and BIC indicates that the `model2` with the interaction terms provides a significantly  better fit relative to the simpler `mode1`. 
+
+# Assumption Checking
+```{r normality}
+# Normality of residuals
+# Extract residuals
+residuals <- resid(model1)
+
+# Q-Q plot
+qqnorm(residuals)
+qqline(residuals)
+```
+
+```{r homogenity}
+# Homogeneity of Variance
+# Fitted values
+fitted_values <- fitted(model1)
+
+# Residuals vs Fitted plot
+plot(fitted_values, residuals)
+abline(h = 0, col = "red")
+title("Residuals vs Fitted Values")
+```
+
+```{r independence}
+# Residuals over time
+plot(BodyWeight$Time, residuals)
+abline(h = 0, col = "red")
+title("Residuals over Time")
+```
