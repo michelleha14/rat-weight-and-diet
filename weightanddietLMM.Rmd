@@ -27,7 +27,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r library, echo=FALSE, message=FALSE}
 packages <- c("lme4", "nlme", "tidyverse", "lmerTest", "ggplot2", "emmeans")
 invisible(lapply(packages, function(package_name) {
-  if (!requireNamespace(package_name, quietly = TRUE)) {
+  if (!requireNamespace(package_name)) {
     install.packages(package_name)
   }
   library(package_name, character.only = TRUE)
@@ -41,6 +41,7 @@ str(BodyWeight)
 ```
 
 # Data Visualization
+
 ```{r line-plot}
 BodyWeight |>
   mutate(Rat1 = factor(as.numeric(Rat))) |>
@@ -48,9 +49,10 @@ BodyWeight |>
   geom_point() +
   facet_wrap(~Rat1) +
   theme_minimal() +
-  labs(x = "Days", y = "Weight (g)")
+  labs(x = "Time (Days)", y = "Weight (g)")
 ```
-The plot displays the body weights (in grams) of the rats over 64 days at interval of 7 days.
+
+The plot displays the body weight (in grams) of the rats over 64 days at interval of 7 days.
 
 ```{r mean-plot}
 # Calculate mean weights for each Time and Diet combination
@@ -63,8 +65,8 @@ mean_weights |> ggplot(aes(x = Time, y = mean_weight, color = Diet, group = Diet
   theme_minimal() +
   labs(
     title = "Mean Rat Weight Over Time by Diet",
-    x = "Time",
-    y = "Mean Weight",
+    x = "Time (Days)",
+    y = "Mean Weight (g)",
     color = "Diet"
   ) +
   theme(
@@ -76,18 +78,22 @@ mean_weights |> ggplot(aes(x = Time, y = mean_weight, color = Diet, group = Diet
 The figure showing the mean weight of each type of diet over time displays an increasing trend in the body weight of the rats as the days progress.
 
 # Model Fitting
+
 ```{r lmm-interaction}
+# get weight at baseline
 BodyWeight <- BodyWeight |>
   group_by(Rat) |>
   arrange(weight, .by_group = TRUE) |>
   mutate(initial_weight = first(weight)) |>
   ungroup()
+
 # fit LMM with interaction effect
 model1 <- lmer(weight ~ Time * Diet + initial_weight + (1 | Rat), BodyWeight)
 summary(model1)
 anova(model1)
 ```
-The interaction term `Time*Diet` has p-value < 0.05 therefore it is reasonable to say the type of die significiantly affect the rats body weight and the effect is consistent over time. The initial weight is also a strong indicator for the body weight.
+
+The interaction term `Time*Diet` has p-value \< 0.05 therefore it is reasonable to say the type of die significiantly affect the rats body weight and the effect is consistent over time. The initial weight is also a strong indicator for the body weight.
 
 # Model Comparison
 
@@ -95,15 +101,18 @@ The interaction term `Time*Diet` has p-value < 0.05 therefore it is reasonable t
 # fit LMM with no interaction effect
 model2 <- lmer(weight ~ Time + Diet + initial_weight + (1 | Rat), BodyWeight)
 ```
-We will fit a simpler model without the interaction term to see if it could potentially performs as well as `model1`. The simpler model still has `Rat` as a random effect and initial_weight as fixed effect, except `Time` and `Diet` are now the fixed effects.
+
+We will fit a simpler model without the interaction term to see if it could potentially performs as well as `model1`. The simpler model still has `Rat` as a random effect and `initial_weight` as fixed effect, except `Time` and `Diet` are now the fixed effects.
 
 ```{r compare-models}
 # compare models
 anova(model1, model2)
 ```
-P-value of < 0.05 and lower AIC and BIC indicates that the `model2` with the interaction terms provides a significantly  better fit relative to the simpler `mode1`. 
+
+P-value of \< 0.05 and lower AIC and BIC indicates that the `model2` with the interaction terms provides a significantly better fit relative to the simpler `mode1`.
 
 # Assumption Checking
+
 ```{r normality}
 # Normality of residuals
 # Extract residuals
@@ -113,6 +122,8 @@ residuals <- resid(model1)
 qqnorm(residuals)
 qqline(residuals)
 ```
+
+The majority of the points fall close to the diagonal line, with some departures at the tails. The overall shape suggests mild non-normality.
 
 ```{r homogenity}
 # Homogeneity of Variance
@@ -125,9 +136,13 @@ abline(h = 0, col = "red")
 title("Residuals vs Fitted Values")
 ```
 
+The spread of residuals appears to vary across the range of fitted values. There's noticeably more spread (larger residuals) for fitted values around 500-600 compared to those around 300-400. This suggests some heteroscedasticity.
+
 ```{r independence}
 # Residuals over time
 plot(BodyWeight$Time, residuals)
 abline(h = 0, col = "red")
 title("Residuals over Time")
 ```
+
+The residuals appear to be fairly randomly scattered around the zero line across time. There seem to be a few potential outliers, which might warrant further investigation. Overall, the assumption of independence of residuals is generally met.
