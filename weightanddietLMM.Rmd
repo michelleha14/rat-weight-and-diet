@@ -1,12 +1,8 @@
 ---
 title: "BodyWeight Linear Mixed Model Analysis Analysis"
 author: "Michelle Ha"
-date: "`r format(Sys.time(), '%d %B %Y)')`"
+date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
-  pdf_document:
-    toc: true
-    toc_depth: '3'
-  urlcolor: blue
   html_document:
     'css:': style.css
     figure_caption: true
@@ -18,10 +14,18 @@ output:
     toc_float:
       collapsed: true
       smooth_scroll: false
+  urlcolor: blue
+  pdf_document:
+    toc: true
+    toc_depth: '3'
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE
+)
 ```
 
 ```{r library, echo=FALSE, message=FALSE}
@@ -49,7 +53,14 @@ BodyWeight |>
   geom_point() +
   facet_wrap(~Rat1) +
   theme_minimal() +
-  labs(x = "Time (Days)", y = "Weight (g)")
+  labs(
+    x = "Time (Days)",
+    y = "Weight (g)",
+    title = "Body Weight over Time"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
 ```
 
 The plot displays the body weight (in grams) of the rats over 64 days at interval of 7 days.
@@ -64,7 +75,7 @@ mean_weights |> ggplot(aes(x = Time, y = mean_weight, color = Diet, group = Diet
   geom_point(size = 3) +
   theme_minimal() +
   labs(
-    title = "Mean Rat Weight Over Time by Diet",
+    title = "Mean Body Weight Over Time by Diet",
     x = "Time (Days)",
     y = "Mean Weight (g)",
     color = "Diet"
@@ -102,14 +113,14 @@ The interaction term `Time*Diet` has p-value \< 0.05 therefore it is reasonable 
 model2 <- lmer(weight ~ Time + Diet + initial_weight + (1 | Rat), BodyWeight)
 ```
 
-We will fit a simpler model without the interaction term to see if it could potentially performs as well as `model1`. The simpler model still has `Rat` as a random effect and `initial_weight` as fixed effect, except `Time` and `Diet` are now the fixed effects.
+We will fit a simpler model without the interaction term to see if it could potentially performs as well as `model1`. The simpler model still has `Rat` as random effect and `initial_weight` as fixed effect, except `Time` and `Diet` are now the fixed effects.
 
 ```{r compare-models}
 # compare models
 anova(model1, model2)
 ```
 
-P-value of \< 0.05 and lower AIC and BIC indicates that the `model2` with the interaction terms provides a significantly better fit relative to the simpler `mode1`.
+P-value of \< 0.05 and lower AIC and BIC indicates that the `model1` with the interaction term provides a significantly better fit relative to the simpler `model2`.
 
 # Assumption Checking
 
@@ -136,7 +147,7 @@ abline(h = 0, col = "red")
 title("Residuals vs Fitted Values")
 ```
 
-The spread of residuals appears to vary across the range of fitted values. There's noticeably more spread (larger residuals) for fitted values around 500-600 compared to those around 300-400. This suggests some heteroscedasticity.
+The spread of residuals appears to vary across the range of fitted values. There is noticeably more spread (larger residuals) for fitted values around 500-600 compared to those around 300-400. This suggests some heteroscedasticity.
 
 ```{r independence}
 # Residuals over time
