@@ -18,18 +18,24 @@ rat variability.
 - nlme (for dataset)
 - ggplot2
 
+## Getting Started
+
+`git clone https://github.com/michelleha14/rat-weight-and-diet.git`
+
 ## Data
 
-The BodyWeight dataset from the nlme package contains longitudinal data
-of rats’ body weights measured over time under different diet
+The BodyWeight dataset from the `nlme` package contains longitudinal
+data of rats’ body weights measured over time under different diet
 treatments.
 
 *For more details, please refer to the*
 [*Documentation*](https://rdrr.io/cran/nlme/man/BodyWeight.html).
 
+## Analysis
+
+Output on [*Posit Cloud*](https://posit.cloud/content/8905018)
+
 ## Author
 
 Name: Michelle Ha  
 Email: <michelle.duong.ha@gmail.com>
-
-## Acknowledgements
